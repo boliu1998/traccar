@@ -1,0 +1,84 @@
+name: SmartGo Dev Image
+
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY_IMAGE: ghcr.io/boliu1998/traccar
+
+jobs:
+  image:
+    name: Build and push dev image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Checkout web submodule
+        run: |
+          git submodule set-url traccar-web https://github.com/traccar/traccar-web.git
+          git submodule update --init traccar-web
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: gradle
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: traccar-web/package-lock.json
+
+      - name: Build server
+        run: ./gradlew build --no-daemon --stacktrace
+
+      - name: Build web app
+        run: npm ci && npm run build
+        working-directory: traccar-web
+
+      - name: Package Docker archive
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip unzip
+          ./package.sh "$TRACCAR_VERSION" other
+          mkdir -p ../docker
+          cp "traccar-other-$TRACCAR_VERSION.zip" ../docker/
+        working-directory: setup
+        env:
+          TRACCAR_VERSION: dev-${{ github.sha }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=dev-,format=short
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: docker
+          file: docker/Dockerfile.alpine
+          build-args: VERSION=dev-${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          push: true
