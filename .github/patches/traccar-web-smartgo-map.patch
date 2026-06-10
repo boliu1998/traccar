@@ -219,10 +219,10 @@ index 00000000..14a11d21
 +  white-space: nowrap;
 +}
 diff --git a/src/map/main/MapDefaultCamera.js b/src/map/main/MapDefaultCamera.js
-index 19d1a3eb..145593cb 100644
+index 19d1a3eb..87ab74f8 100644
 --- a/src/map/main/MapDefaultCamera.js
 +++ b/src/map/main/MapDefaultCamera.js
-@@ -1,16 +1,23 @@
+@@ -1,61 +1,48 @@
 -import maplibregl from 'maplibre-gl';
  import { useEffect, useState } from 'react';
  import { useSelector } from 'react-redux';
@@ -248,9 +248,24 @@ index 19d1a3eb..145593cb 100644
  
    const [initialized, setInitialized] = useState(false);
  
-@@ -26,36 +33,18 @@ const MapDefaultCamera = ({ filteredPositions }) => {
-         setInitialized(true);
-       }
+   useEffect(() => {
+     if (initialized) return;
+-    if (selectedDeviceId) {
+-      const position = positions[selectedDeviceId];
+-      if (position) {
+-        map.jumpTo({
+-          center: [position.longitude, position.latitude],
+-          zoom: Math.max(defaultZoom > 0 ? defaultZoom : map.getZoom(), 10),
+-        });
+-        setInitialized(true);
+-      }
++    const position = selectedDeviceId ? positions[selectedDeviceId] : null;
++    if (position) {
++      map.jumpTo({
++        center: [position.longitude, position.latitude],
++        zoom: Math.max(defaultZoom > 0 ? defaultZoom : map.getZoom(), 10),
++      });
++      setInitialized(true);
      } else {
 -      if (defaultLatitude && defaultLongitude) {
 +      if (hasDefaultCoordinates) {
@@ -292,7 +307,7 @@ index 19d1a3eb..145593cb 100644
        }
      }
    }, [
-@@ -64,8 +53,8 @@ const MapDefaultCamera = ({ filteredPositions }) => {
+@@ -64,8 +51,8 @@ const MapDefaultCamera = ({ filteredPositions }) => {
      defaultLatitude,
      defaultLongitude,
      defaultZoom,
