@@ -27,6 +27,10 @@ jobs:
           git submodule set-url traccar-web https://github.com/traccar/traccar-web.git
           git submodule update --init traccar-web
 
+      - name: Apply SmartGo web customizations
+        run: git apply ../.github/patches/traccar-web-smartgo-map.patch
+        working-directory: traccar-web
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
