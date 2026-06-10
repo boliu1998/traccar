@@ -219,10 +219,10 @@ index 00000000..14a11d21
 +  white-space: nowrap;
 +}
 diff --git a/src/map/main/MapDefaultCamera.js b/src/map/main/MapDefaultCamera.js
-index 19d1a3eb..87ab74f8 100644
+index 19d1a3eb..9bbf9a1e 100644
 --- a/src/map/main/MapDefaultCamera.js
 +++ b/src/map/main/MapDefaultCamera.js
-@@ -1,61 +1,48 @@
+@@ -1,61 +1,52 @@
 -import maplibregl from 'maplibre-gl';
  import { useEffect, useState } from 'react';
  import { useSelector } from 'react-redux';
@@ -240,9 +240,16 @@ index 19d1a3eb..87ab74f8 100644
    const selectedDeviceId = useSelector((state) => state.devices.selectedId);
    const positions = useSelector((state) => state.session.positions);
  
-   const defaultLatitude = usePreference('latitude');
-   const defaultLongitude = usePreference('longitude');
-   const defaultZoom = usePreference('zoom', 0);
+-  const defaultLatitude = usePreference('latitude');
+-  const defaultLongitude = usePreference('longitude');
+-  const defaultZoom = usePreference('zoom', 0);
++  const defaultLatitudePreference = usePreference('latitude');
++  const defaultLongitudePreference = usePreference('longitude');
++  const defaultZoomPreference = usePreference('zoom', 0);
++  const defaultLatitude = Number(defaultLatitudePreference);
++  const defaultLongitude = Number(defaultLongitudePreference);
++  const defaultZoom = Number(defaultZoomPreference) || 0;
++  const cameraZoom = defaultZoom > 0 ? defaultZoom : SMARTGO_DEFAULT_ZOOM;
 +  const hasDefaultCoordinates =
 +    isValidCoordinate(defaultLatitude) && isValidCoordinate(defaultLongitude);
  
@@ -272,7 +279,7 @@ index 19d1a3eb..87ab74f8 100644
          map.jumpTo({
            center: [defaultLongitude, defaultLatitude],
 -          zoom: defaultZoom,
-+          zoom: defaultZoom || SMARTGO_DEFAULT_ZOOM,
++          zoom: cameraZoom,
          });
          setInitialized(true);
        } else {
@@ -301,16 +308,17 @@ index 19d1a3eb..87ab74f8 100644
 -        }
 +        map.jumpTo({
 +          center: [SMARTGO_DEFAULT_LONGITUDE, SMARTGO_DEFAULT_LATITUDE],
-+          zoom: defaultZoom || SMARTGO_DEFAULT_ZOOM,
++          zoom: cameraZoom,
 +        });
 +        setInitialized(true);
        }
      }
    }, [
-@@ -64,8 +51,8 @@ const MapDefaultCamera = ({ filteredPositions }) => {
+@@ -64,8 +55,9 @@ const MapDefaultCamera = ({ filteredPositions }) => {
      defaultLatitude,
      defaultLongitude,
      defaultZoom,
++    cameraZoom,
 +    hasDefaultCoordinates,
      positions,
 -    filteredPositions,
