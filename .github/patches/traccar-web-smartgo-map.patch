@@ -1,5 +1,5 @@
 diff --git a/src/main/MainMap.jsx b/src/main/MainMap.jsx
-index 0bc9a53a..3c20c740 100644
+index 0bc9a53a..ef185f39 100644
 --- a/src/main/MainMap.jsx
 +++ b/src/main/MainMap.jsx
 @@ -17,6 +17,7 @@ import MapOverlay from '../map/overlay/MapOverlay';
@@ -10,7 +10,13 @@ index 0bc9a53a..3c20c740 100644
  import useFeatures from '../common/util/useFeatures';
  
  const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
-@@ -54,6 +55,7 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
+@@ -49,11 +50,12 @@ const MainMap = ({ filteredPositions, selectedPosition, onEventsClick }) => {
+           selectedPosition={selectedPosition}
+           showStatus
+         />
+-        <MapDefaultCamera filteredPositions={filteredPositions} />
++        <MapDefaultCamera />
+         <MapSelectedDevice />
          <PoiMap />
        </MapView>
        <MapScale />
@@ -20,6 +26,7 @@ index 0bc9a53a..3c20c740 100644
        {!features.disableEvents && (
 diff --git a/src/map/legend/MapSmartGoLegend.js b/src/map/legend/MapSmartGoLegend.js
 new file mode 100644
+index 00000000..98e23c11
 --- /dev/null
 +++ b/src/map/legend/MapSmartGoLegend.js
 @@ -0,0 +1,132 @@
@@ -157,9 +164,10 @@ new file mode 100644
 +export default MapSmartGoLegend;
 diff --git a/src/map/legend/smartgoLegend.css b/src/map/legend/smartgoLegend.css
 new file mode 100644
+index 00000000..14a11d21
 --- /dev/null
 +++ b/src/map/legend/smartgoLegend.css
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,50 @@
 +.smartgo-map-legend {
 +  max-width: 260px;
 +  max-height: 42vh;
@@ -211,23 +219,27 @@ new file mode 100644
 +  white-space: nowrap;
 +}
 diff --git a/src/map/main/MapDefaultCamera.js b/src/map/main/MapDefaultCamera.js
-index 19d1a3eb..9eba8018 100644
+index 19d1a3eb..145593cb 100644
 --- a/src/map/main/MapDefaultCamera.js
 +++ b/src/map/main/MapDefaultCamera.js
-@@ -4,6 +4,12 @@ import { useSelector } from 'react-redux';
+@@ -1,16 +1,23 @@
+-import maplibregl from 'maplibre-gl';
+ import { useEffect, useState } from 'react';
+ import { useSelector } from 'react-redux';
  import { usePreference } from '../../common/util/preferences';
  import { map } from '../core/MapView';
  
+-const MapDefaultCamera = ({ filteredPositions }) => {
 +const SMARTGO_DEFAULT_LATITUDE = 48.137154;
 +const SMARTGO_DEFAULT_LONGITUDE = 11.576124;
 +const SMARTGO_DEFAULT_ZOOM = 10;
 +
 +const isValidCoordinate = (value) => Number.isFinite(Number(value)) && Number(value) !== 0;
 +
- const MapDefaultCamera = ({ filteredPositions }) => {
++const MapDefaultCamera = () => {
    const selectedDeviceId = useSelector((state) => state.devices.selectedId);
    const positions = useSelector((state) => state.session.positions);
-@@ -11,6 +17,8 @@ const MapDefaultCamera = ({ filteredPositions }) => {
+ 
    const defaultLatitude = usePreference('latitude');
    const defaultLongitude = usePreference('longitude');
    const defaultZoom = usePreference('zoom', 0);
@@ -236,7 +248,7 @@ index 19d1a3eb..9eba8018 100644
  
    const [initialized, setInitialized] = useState(false);
  
-@@ -26,10 +34,10 @@ const MapDefaultCamera = ({ filteredPositions }) => {
+@@ -26,36 +33,18 @@ const MapDefaultCamera = ({ filteredPositions }) => {
          setInitialized(true);
        }
      } else {
@@ -249,28 +261,44 @@ index 19d1a3eb..9eba8018 100644
          });
          setInitialized(true);
        } else {
-@@ -56,6 +64,16 @@ const MapDefaultCamera = ({ filteredPositions }) => {
-           });
-           setInitialized(true);
-         }
-+        if (!coordinates.length) {
-+          map.jumpTo({
-+            center: [
-+              isValidCoordinate(defaultLongitude) ? defaultLongitude : SMARTGO_DEFAULT_LONGITUDE,
-+              isValidCoordinate(defaultLatitude) ? defaultLatitude : SMARTGO_DEFAULT_LATITUDE,
-+            ],
-+            zoom: defaultZoom || SMARTGO_DEFAULT_ZOOM,
-+          });
-+          setInitialized(true);
-+        }
+-        const coordinates = (filteredPositions || Object.values(positions)).map((item) => [
+-          item.longitude,
+-          item.latitude,
+-        ]);
+-        if (coordinates.length > 1) {
+-          const bounds = coordinates.reduce(
+-            (bounds, item) => bounds.extend(item),
+-            new maplibregl.LngLatBounds(coordinates[0], coordinates[1]),
+-          );
+-          const canvas = map.getCanvas();
+-          map.fitBounds(bounds, {
+-            duration: 0,
+-            padding: Math.min(canvas.width, canvas.height) * 0.1,
+-          });
+-          setInitialized(true);
+-        } else if (coordinates.length) {
+-          const [individual] = coordinates;
+-          map.jumpTo({
+-            center: individual,
+-            zoom: Math.max(defaultZoom > 0 ? defaultZoom : map.getZoom(), 10),
+-          });
+-          setInitialized(true);
+-        }
++        map.jumpTo({
++          center: [SMARTGO_DEFAULT_LONGITUDE, SMARTGO_DEFAULT_LATITUDE],
++          zoom: defaultZoom || SMARTGO_DEFAULT_ZOOM,
++        });
++        setInitialized(true);
        }
      }
    }, [
-@@ -64,6 +82,7 @@ const MapDefaultCamera = ({ filteredPositions }) => {
+@@ -64,8 +53,8 @@ const MapDefaultCamera = ({ filteredPositions }) => {
      defaultLatitude,
      defaultLongitude,
      defaultZoom,
 +    hasDefaultCoordinates,
      positions,
-     filteredPositions,
+-    filteredPositions,
    ]);
+ 
+   return null;
