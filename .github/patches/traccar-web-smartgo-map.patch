@@ -22,7 +22,7 @@ diff --git a/src/map/legend/MapSmartGoLegend.js b/src/map/legend/MapSmartGoLegen
 new file mode 100644
 --- /dev/null
 +++ b/src/map/legend/MapSmartGoLegend.js
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,132 @@
 +import { useEffect, useMemo } from 'react';
 +import { useSelector } from 'react-redux';
 +import { useTheme } from '@mui/material';
