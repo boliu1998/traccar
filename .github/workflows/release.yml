@@ -8,9 +8,13 @@ on:
         required: true
         default: preview
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build:
-    name: Build installers
+    name: Build docker archive
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,23 +37,14 @@ jobs:
       - run: npm ci && npm run build
         working-directory: ./traccar-web
       - run: |
-          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y libgcc-s1:i386 libstdc++6:i386
-          sudo apt-get install -y innoextract makeself wine32
-      - run: |
-          JDK_API="https://api.adoptium.net/v3/binary/latest/25/ga"
-          wget -q --content-disposition --trust-server-names "$JDK_API/windows/x64/jdk/hotspot/normal/eclipse"
-          wget -q --content-disposition --trust-server-names "$JDK_API/linux/x64/jdk/hotspot/normal/eclipse"
-          wget -q --content-disposition --trust-server-names "$JDK_API/linux/aarch64/jdk/hotspot/normal/eclipse"
-          ls -l OpenJDK*
-          wget -q http://files.jrsoftware.org/is/5/isetup-5.5.6.exe
-          ./package.sh ${{ github.event.inputs.version }}
+          sudo apt-get install -y zip unzip
+          ./package.sh ${{ github.event.inputs.version }} other
         working-directory: ./setup
       - uses: actions/upload-artifact@v7
         with:
-          name: installers
-          path: setup/traccar-*.zip
+          name: docker-archive
+          path: setup/traccar-other-*.zip
           compression-level: 0
           retention-days: 1
 
@@ -60,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v8
+        with:
+          name: docker-archive
       - env:
           S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
@@ -68,7 +65,7 @@ jobs:
           s3cmd --acl-public put traccar-*.zip s3://traccar/builds/ --host=nyc3.digitaloceanspaces.com --host-bucket=traccar --access_key="$S3_ACCESS_KEY" --secret_key="$S3_SECRET_KEY"
 
   release:
-    name: Create release with installers
+    name: Create release with docker archive
     needs: build
     if: ${{ github.event.inputs.version != 'preview' }}
     runs-on: ubuntu-latest
@@ -77,34 +74,27 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
+        with:
+          name: docker-archive
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ github.event.inputs.version }}
-          files: traccar-*.zip
+          files: traccar-other-*.zip
 
   docker:
-    name: Build and push docker images
+    name: Build and push ARM64 Alpine image
     needs: build
     if: ${{ github.event.inputs.version != 'preview' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [alpine, debian, ubuntu]
-        include:
-          - platforms: linux/amd64,linux/arm64
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
+          name: docker-archive
           path: docker
-      - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -114,26 +104,18 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           flavor: latest=false
-          images: |
-            traccar/traccar
-            ghcr.io/traccar/traccar
+          images: ghcr.io/boliu1998/traccar
           tags: |
-            type=semver,pattern={{major}}.{{minor}}.{{patch}},suffix=-${{ matrix.os }},value=v${{ github.event.inputs.version }}
-            type=semver,pattern={{major}}.{{minor}},suffix=-${{ matrix.os }},value=v${{ github.event.inputs.version }}
-            type=semver,pattern={{major}},suffix=-${{ matrix.os }},value=v${{ github.event.inputs.version }}
-            type=semver,pattern={{major}}.{{minor}}.{{patch}},value=v${{ github.event.inputs.version }},enable=${{ matrix.os == 'alpine' }}
-            type=semver,pattern={{major}}.{{minor}},value=v${{ github.event.inputs.version }},enable=${{ matrix.os == 'alpine' }}
-            type=semver,pattern={{major}},value=v${{ github.event.inputs.version }},enable=${{ matrix.os == 'alpine' }}
-            type=raw,value=latest,enable=${{ matrix.os == 'alpine' }}
-            type=raw,value=${{ matrix.os }}
+            type=raw,value=v${{ github.event.inputs.version }}
+            type=raw,value=release
           labels: |
             org.opencontainers.image.version=${{ github.event.inputs.version }}
       - uses: docker/build-push-action@v7
         with:
           context: docker
-          file: docker/Dockerfile.${{ matrix.os }}
+          file: docker/Dockerfile.alpine
           build-args: VERSION=${{ github.event.inputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: ${{ matrix.platforms }}
+          platforms: linux/arm64
           push: true
