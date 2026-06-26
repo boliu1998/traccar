@@ -27,7 +27,8 @@ services:
       DATABASE_URL: jdbc:postgresql://database:5432/traccar
       DATABASE_USER: traccar
       DATABASE_PASSWORD: ${TRACCAR_DB_PASSWORD:?set TRACCAR_DB_PASSWORD}
-      PROTOCOLS_ENABLE: teltonika
+      PROTOCOLS_ENABLE: teltonika,smartcar
+      SMARTCAR_MANAGEMENT_TOKEN: ${SMARTCAR_MANAGEMENT_TOKEN:?set SMARTCAR_MANAGEMENT_TOKEN}
       LOGGER_CONSOLE: "true"
     healthcheck:
       test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/api/health" ]
