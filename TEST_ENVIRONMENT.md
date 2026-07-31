@@ -4,10 +4,15 @@ Updated: 2026-07-31
 
 ## Migration State
 
-`traccar-dev` is planned to move to `SF-test-server`. The destination host is
-ready, but the Traccar database, media, device endpoint, and event-forward
-target have not been cut over yet. The old runtime remains authoritative until
-the final migration record is marked complete.
+`traccar-dev` moved to `SF-test-server` on 2026-07-31 at 12:42 UTC. Final run
+`20260731T123951Z` restored the PostgreSQL database and media, verified the
+private Web/API, and changed event forwarding from production Fleet to
+Fleet-test. The target runtime is authoritative.
+
+The old Traccar application is stopped. Its PostgreSQL container, data
+directory, compose files, and final logical dump remain intact for rollback.
+No GPS device endpoint was cut over because this test environment has no real
+GPS device in scope.
 
 ## Target Identity And Endpoints
 
