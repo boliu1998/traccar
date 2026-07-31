@@ -18,7 +18,7 @@ forward_file="/etc/traccar-dev/forward.env"
 base_file="$repo_dir/docker/compose/sf-test-server.yaml"
 forward_override="$repo_dir/docker/compose/sf-test-server-forward.yaml"
 protocol_file="$repo_dir/docker/compose/$protocol_override"
-expected_forward_url="http://sf-test-server.tail056d0a.ts.net:8088/fleet-test/api/v1/gps/traccar/v1/events"
+expected_forward_url="http://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/gps/traccar/v1/events"
 project="traccar-dev"
 activated=0
 
@@ -55,7 +55,7 @@ test -n "$(awk -F= '$1=="TRACCAR_EVENT_FORWARD_HEADER"{print substr($0,index($0,
 test "$(base_compose ps --status running --services | sort)" = "$(printf 'database\ntraccar')"
 test "$(docker inspect traccar-dev-database-1 --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = healthy
 curl --noproxy '*' -fsS http://100.64.127.75:18082/api/health >/dev/null
-curl --noproxy '*' -fsS http://sf-test-server.tail056d0a.ts.net:8088/fleet-test/health >/dev/null
+curl --noproxy '*' -fsS http://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/health >/dev/null
 
 active_compose config --quiet
 activated=1

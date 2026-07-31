@@ -21,7 +21,7 @@ the final migration record is marked complete.
 | Private Web/API | `http://sf-test-server.tail056d0a.ts.net:18082` |
 | Teltonika device endpoint after cutover | `52.57.169.208:15027/tcp` |
 | Smartcar protocol host port, if retained | `52.57.169.208:15262/tcp` |
-| Event-forward target | Fleet-test `/fleet-test/api/v1/gps/traccar/v1/events` |
+| Event-forward target | `http://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/gps/traccar/v1/events` |
 
 The Web/API port is private to Tailscale. Only protocol ports that are proven
 to be needed may be allowed by the EC2 Security Group.
