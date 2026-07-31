@@ -112,6 +112,10 @@ compose exec -T database pg_restore \
   < "$dump_path"
 
 media_volume="${project}_traccar-media"
+docker volume create \
+  --label "com.docker.compose.project=$project" \
+  --label "com.docker.compose.volume=traccar-media" \
+  "$media_volume" >/dev/null
 docker run --rm -i --entrypoint /bin/sh \
   -v "$media_volume":/restore \
   "ghcr.io/boliu1998/traccar@$expected_traccar_digest" \
@@ -153,7 +157,7 @@ diff -u "$evidence_dir/source-data-comparable.psv" "$evidence_dir/target-data-co
 
 docker run --rm --entrypoint /bin/sh -v "$media_volume":/media:ro \
   "ghcr.io/boliu1998/traccar@$expected_traccar_digest" \
-  -lc "find /media -type f | wc -l; find /media -type f -exec stat -c '%s' {} + | awk '{total += \\$1} END {print total + 0}'" \
+  -lc "find /media -type f | wc -l; find /media -type f -exec stat -c '%s' {} + | awk '{total += \$1} END {print total + 0}'" \
   > "$evidence_dir/target-media-raw.txt"
 target_media_files="$(sed -n '1p' "$evidence_dir/target-media-raw.txt")"
 target_media_bytes="$(awk 'NR==2{print $1}' "$evidence_dir/target-media-raw.txt")"
