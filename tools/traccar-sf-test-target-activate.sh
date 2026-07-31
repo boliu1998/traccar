@@ -3,12 +3,13 @@
 set -Eeuo pipefail
 umask 077
 
-expected_commit="${1:?usage: traccar-sf-test-target-activate.sh EXPECTED_COMMIT teltonika|teltonika-smartcar}"
+expected_commit="${1:?usage: traccar-sf-test-target-activate.sh EXPECTED_COMMIT none|teltonika|teltonika-smartcar}"
 protocol_scope="${2:?missing protocol scope}"
 case "$protocol_scope" in
+  none) protocol_override="" ;;
   teltonika) protocol_override="sf-test-server-device.yaml" ;;
   teltonika-smartcar) protocol_override="sf-test-server-smartcar.yaml" ;;
-  *) echo "Protocol scope must be teltonika or teltonika-smartcar" >&2; exit 2 ;;
+  *) echo "Protocol scope must be none, teltonika, or teltonika-smartcar" >&2; exit 2 ;;
 esac
 [[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]
 
@@ -17,7 +18,6 @@ runtime_file="/etc/traccar-dev/runtime.env"
 forward_file="/etc/traccar-dev/forward.env"
 base_file="$repo_dir/docker/compose/sf-test-server.yaml"
 forward_override="$repo_dir/docker/compose/sf-test-server-forward.yaml"
-protocol_file="$repo_dir/docker/compose/$protocol_override"
 expected_forward_url="http://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/gps/traccar/v1/events"
 project="traccar-dev"
 activated=0
@@ -28,9 +28,14 @@ base_compose() {
 }
 
 active_compose() {
+  local compose_files=(-f "$base_file")
+  if test -n "$protocol_override"; then
+    compose_files+=(-f "$repo_dir/docker/compose/$protocol_override")
+  fi
+  compose_files+=(-f "$forward_override")
   docker compose -p "$project" \
     --env-file "$runtime_file" --env-file "$forward_file" \
-    -f "$base_file" -f "$protocol_file" -f "$forward_override" "$@"
+    "${compose_files[@]}" "$@"
 }
 
 rollback_activation() {
@@ -69,10 +74,14 @@ done
 test "${health:-}" = healthy
 test "$(docker exec traccar-dev-traccar-1 printenv EVENT_FORWARD_URL)" = "$expected_forward_url"
 test -n "$(docker exec traccar-dev-traccar-1 printenv EVENT_FORWARD_HEADER)"
-ss -ltn | grep -E '0[.]0[.]0[.]0:15027[[:space:]]' >/dev/null
+if test "$protocol_scope" = "none"; then
+  test -z "$(ss -ltn | grep -E ':(15027|15262)[[:space:]]' || true)"
+else
+  ss -ltn | grep -E '0[.]0[.]0[.]0:15027[[:space:]]' >/dev/null
+fi
 if test "$protocol_scope" = "teltonika-smartcar"; then
   ss -ltn | grep -E '0[.]0[.]0[.]0:15262[[:space:]]' >/dev/null
-else
+elif test "$protocol_scope" != "none"; then
   test -z "$(ss -ltn | grep -E ':15262[[:space:]]' || true)"
 fi
 curl --noproxy '*' -fsS http://100.64.127.75:18082/api/health >/dev/null
