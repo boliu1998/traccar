@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-expected_commit="${1:?usage: traccar-sf-test-source-rollback.sh EXPECTED_COMMIT EXPECTED_TRACCAR_DIGEST}"
+expected_image_commit="${1:?usage: traccar-sf-test-source-rollback.sh EXPECTED_IMAGE_COMMIT EXPECTED_TRACCAR_DIGEST}"
 expected_traccar_digest="${2:?missing Traccar digest}"
-[[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]
+[[ "$expected_image_commit" =~ ^[0-9a-f]{40}$ ]]
 [[ "$expected_traccar_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 
 repo_dir="/opt/traccar-dev"
@@ -15,7 +15,7 @@ compose() {
 
 test "$(tailscale ip -4)" = "100.86.212.126"
 test "$(docker inspect traccar-dev-database-1 --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = healthy
-test "$(docker image inspect "$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_commit"
+test "$(docker image inspect "$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_image_commit"
 
 compose up -d --no-build --pull never traccar
 for _ in $(seq 1 90); do

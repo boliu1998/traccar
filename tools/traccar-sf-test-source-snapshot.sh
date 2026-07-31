@@ -3,9 +3,9 @@
 set -Eeuo pipefail
 umask 077
 
-run_id="${1:?usage: traccar-sf-test-source-snapshot.sh RUN_ID rehearsal|final EXPECTED_COMMIT EXPECTED_TRACCAR_DIGEST EXPECTED_POSTGRES_DIGEST}"
+run_id="${1:?usage: traccar-sf-test-source-snapshot.sh RUN_ID rehearsal|final EXPECTED_IMAGE_COMMIT EXPECTED_TRACCAR_DIGEST EXPECTED_POSTGRES_DIGEST}"
 mode="${2:?missing mode}"
-expected_commit="${3:?missing expected commit}"
+expected_image_commit="${3:?missing expected image commit}"
 expected_traccar_digest="${4:?missing Traccar digest}"
 expected_postgres_digest="${5:?missing PostgreSQL digest}"
 
@@ -17,7 +17,7 @@ case "$mode" in
   rehearsal | final) ;;
   *) echo "Mode must be rehearsal or final" >&2; exit 2 ;;
 esac
-[[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]
+[[ "$expected_image_commit" =~ ^[0-9a-f]{40}$ ]]
 [[ "$expected_traccar_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 [[ "$expected_postgres_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 
@@ -50,7 +50,7 @@ test ! -e "$staging_dir"
 test "$(docker inspect "$traccar_container" --format '{{.Image}}')" = "$expected_traccar_digest"
 test "$(docker inspect "$database_container" --format '{{.Image}}')" = "$expected_postgres_digest"
 test "$(docker inspect "$database_container" --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = healthy
-test "$(docker image inspect "$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_commit"
+test "$(docker image inspect "$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_image_commit"
 
 mkdir -p "$evidence_dir"
 chmod 0700 "$staging_dir" "$evidence_dir"

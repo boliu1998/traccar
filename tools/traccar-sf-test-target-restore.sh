@@ -3,12 +3,13 @@
 set -Eeuo pipefail
 umask 077
 
-run_id="${1:?usage: traccar-sf-test-target-restore.sh RUN_ID rehearsal|final EXPECTED_COMMIT EXPECTED_BUNDLE_SHA256 EXPECTED_TRACCAR_DIGEST EXPECTED_POSTGRES_DIGEST}"
+run_id="${1:?usage: traccar-sf-test-target-restore.sh RUN_ID rehearsal|final EXPECTED_CONFIG_COMMIT EXPECTED_IMAGE_COMMIT EXPECTED_BUNDLE_SHA256 EXPECTED_TRACCAR_DIGEST EXPECTED_POSTGRES_DIGEST}"
 mode="${2:?missing mode}"
-expected_commit="${3:?missing expected commit}"
-expected_bundle_sha="${4:?missing bundle SHA-256}"
-expected_traccar_digest="${5:?missing Traccar digest}"
-expected_postgres_digest="${6:?missing PostgreSQL digest}"
+expected_config_commit="${3:?missing expected config commit}"
+expected_image_commit="${4:?missing expected image commit}"
+expected_bundle_sha="${5:?missing bundle SHA-256}"
+expected_traccar_digest="${6:?missing Traccar digest}"
+expected_postgres_digest="${7:?missing PostgreSQL digest}"
 
 case "$run_id" in
   20??????T??????Z) ;;
@@ -19,7 +20,8 @@ case "$mode" in
   final) project="traccar-dev" ;;
   *) echo "Mode must be rehearsal or final" >&2; exit 2 ;;
 esac
-[[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]
+[[ "$expected_config_commit" =~ ^[0-9a-f]{40}$ ]]
+[[ "$expected_image_commit" =~ ^[0-9a-f]{40}$ ]]
 [[ "$expected_bundle_sha" =~ ^[0-9a-f]{64}$ ]]
 [[ "$expected_traccar_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
 [[ "$expected_postgres_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
@@ -52,7 +54,7 @@ test "$(hostname)" = "sf-test-server"
 test "$(tailscale ip -4)" = "100.64.127.75"
 test -r "$repo_dir/DEPLOYMENT_COMMIT"
 test -r "$repo_dir/DEPLOYMENT_BUNDLE_SHA256"
-test "$(cat "$repo_dir/DEPLOYMENT_COMMIT")" = "$expected_commit"
+test "$(cat "$repo_dir/DEPLOYMENT_COMMIT")" = "$expected_config_commit"
 test "$(cat "$repo_dir/DEPLOYMENT_BUNDLE_SHA256")" = "$expected_bundle_sha"
 test -r "$compose_file"
 test -r "$dump_path"
@@ -92,7 +94,7 @@ chmod 0700 "$evidence_dir"
 
 docker pull "ghcr.io/boliu1998/traccar@$expected_traccar_digest"
 docker pull "postgres@$expected_postgres_digest"
-test "$(docker image inspect "ghcr.io/boliu1998/traccar@$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_commit"
+test "$(docker image inspect "ghcr.io/boliu1998/traccar@$expected_traccar_digest" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = "$expected_image_commit"
 compose config --quiet
 compose up -d --no-build --pull never database
 

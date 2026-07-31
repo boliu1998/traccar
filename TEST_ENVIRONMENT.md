@@ -44,6 +44,11 @@ does not define any event-forward environment variable. Traccar treats an empty
 `EVENT_FORWARD_URL` environment variable as configured, so an empty value is
 not a safe way to disable forwarding.
 
+The deployment record tracks the config-bundle commit separately from the
+immutable Traccar image revision. A migration may preserve an already-approved
+image built from an earlier `origin/dev` commit while deploying newer
+environment-only compose and migration tooling from the current `origin/dev`.
+
 Use these overrides only after the corresponding final-cutover gate:
 
 - `sf-test-server-device.yaml`: expose the Teltonika test endpoint.
