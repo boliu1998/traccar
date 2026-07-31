@@ -1,0 +1,6 @@
+services:
+  traccar:
+    environment:
+      EVENT_FORWARD_TYPE: json
+      EVENT_FORWARD_URL: ${TRACCAR_EVENT_FORWARD_URL:?set Fleet-test event-forward URL}
+      EVENT_FORWARD_HEADER: ${TRACCAR_EVENT_FORWARD_HEADER:?set Fleet-test event-forward header}

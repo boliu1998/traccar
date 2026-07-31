@@ -1,0 +1,48 @@
+name: traccar-dev
+
+services:
+  database:
+    image: ${POSTGRES_IMAGE:?pin POSTGRES_IMAGE to the approved digest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: traccar
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: ${TRACCAR_DB_PASSWORD:?set TRACCAR_DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traccar -d traccar"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  traccar:
+    image: ${TRACCAR_IMAGE:?pin TRACCAR_IMAGE to the approved digest}
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
+      DATABASE_DRIVER: org.postgresql.Driver
+      DATABASE_URL: jdbc:postgresql://database:5432/traccar
+      DATABASE_USER: traccar
+      DATABASE_PASSWORD: ${TRACCAR_DB_PASSWORD:?set TRACCAR_DB_PASSWORD}
+      PROTOCOLS_ENABLE: teltonika,smartcar
+      LOGGER_CONSOLE: "true"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8082/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 2m
+      retries: 5
+    ports:
+      - "100.64.127.75:18082:8082"
+    volumes:
+      - traccar-logs:/opt/traccar/logs
+      - traccar-media:/opt/traccar/media
+
+volumes:
+  postgres-data:
+  traccar-logs:
+  traccar-media:
