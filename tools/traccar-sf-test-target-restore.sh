@@ -16,7 +16,7 @@ case "$run_id" in
   *) echo "Invalid run id: $run_id" >&2; exit 2 ;;
 esac
 case "$mode" in
-  rehearsal) project="traccar-dev-rehearsal" ;;
+  rehearsal) project="traccar-dev-rehearsal-${run_id,,}" ;;
   final) project="traccar-dev" ;;
   *) echo "Mode must be rehearsal or final" >&2; exit 2 ;;
 esac
@@ -151,9 +151,9 @@ grep -Ev '^database_size[|]' "$evidence_dir/target-data.psv" \
   > "$evidence_dir/target-data-comparable.psv"
 diff -u "$evidence_dir/source-data-comparable.psv" "$evidence_dir/target-data-comparable.psv"
 
-docker run --rm -v "$media_volume":/media:ro \
+docker run --rm --entrypoint /bin/sh -v "$media_volume":/media:ro \
   "ghcr.io/boliu1998/traccar@$expected_traccar_digest" \
-  sh -lc "find /media -type f | wc -l; find /media -type f -exec stat -c '%s' {} + | awk '{total += \\$1} END {print total + 0}'" \
+  -lc "find /media -type f | wc -l; find /media -type f -exec stat -c '%s' {} + | awk '{total += \\$1} END {print total + 0}'" \
   > "$evidence_dir/target-media-raw.txt"
 target_media_files="$(sed -n '1p' "$evidence_dir/target-media-raw.txt")"
 target_media_bytes="$(awk 'NR==2{print $1}' "$evidence_dir/target-media-raw.txt")"
