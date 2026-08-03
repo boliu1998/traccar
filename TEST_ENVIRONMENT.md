@@ -23,13 +23,16 @@ GPS device in scope.
 | Tailscale IPv4 fallback | `100.64.127.75` |
 | Public EIP | `52.57.169.208` |
 | Server directory | `/opt/traccar-dev` |
-| Private Web/API | `http://sf-test-server.tail056d0a.ts.net:18082` |
+| Private Web/API | `https://sf-test-server.tail056d0a.ts.net:18082` |
+| Host-only Web/API upstream | `http://127.0.0.1:18083` |
 | Teltonika device endpoint, when explicitly enabled | `52.57.169.208:15027/tcp` |
 | Smartcar protocol host port, when explicitly enabled | `52.57.169.208:15262/tcp` |
-| Event-forward target | `http://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/gps/traccar/v1/events` |
+| Event-forward target | `https://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/gps/traccar/v1/events` |
 
-The Web/API port is private to Tailscale. Only protocol ports that are proven
-to be needed may be allowed by the EC2 Security Group.
+The HTTPS Web/API port is private to Tailscale and terminates TLS at host
+Nginx. The Traccar container binds its HTTP Web/API only to host loopback
+`127.0.0.1:18083`. Only protocol ports that are proven to be needed may be
+allowed by the EC2 Security Group.
 
 The 2026-07-31 final cutover has no real GPS device in scope. Both `15027` and
 `15262` remain unpublished and blocked; a later hardware test must request a

@@ -37,7 +37,7 @@ services:
       start_period: 2m
       retries: 5
     ports:
-      - "100.64.127.75:18082:8082"
+      - "127.0.0.1:18083:8082"
     volumes:
       - traccar-logs:/opt/traccar/logs
       - traccar-media:/opt/traccar/media
