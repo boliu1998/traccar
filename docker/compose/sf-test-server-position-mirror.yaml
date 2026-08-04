@@ -1,0 +1,48 @@
+services:
+  traccar:
+    environment:
+      PROTOCOLS_ENABLE: teltonika,smartcar,osmand
+      FORWARD_TYPE: json
+      FORWARD_URL: ${TRACCAR_POSITION_FORWARD_URL:?set Fleet-test position intake URL}
+      FORWARD_HEADER: ${TRACCAR_POSITION_FORWARD_HEADER:?set Fleet-test position authorization header}
+      FORWARD_RETRY_ENABLE: "true"
+      FORWARD_RETRY_DELAY: "1000"
+      FORWARD_RETRY_COUNT: "10"
+      FORWARD_RETRY_LIMIT: "1000"
+
+  position-mirror:
+    image: ${TRACCAR_POSITION_MIRROR_IMAGE:?pin the approved Python image digest}
+    restart: unless-stopped
+    depends_on:
+      traccar:
+        condition: service_healthy
+    command: ["python3", "/app/traccar_position_mirror.py"]
+    environment:
+      TRACCAR_POSITION_MIRROR_SOURCE_URL: ${TRACCAR_POSITION_MIRROR_SOURCE_URL:?set production Traccar HTTPS URL}
+      TRACCAR_POSITION_MIRROR_SOURCE_TOKEN: ${TRACCAR_POSITION_MIRROR_SOURCE_TOKEN:?set production read-only token}
+      TRACCAR_POSITION_MIRROR_SOURCE_HOST: ${TRACCAR_POSITION_MIRROR_SOURCE_HOST:?set approved production host}
+      TRACCAR_POSITION_MIRROR_INGEST_URL: http://traccar:5055/
+      TRACCAR_POSITION_MIRROR_DEVICE_IDS: ${TRACCAR_POSITION_MIRROR_DEVICE_IDS:?set approved production device IDs}
+      TRACCAR_POSITION_MIRROR_STATE_PATH: /state/watermarks.json
+      TRACCAR_POSITION_MIRROR_POLL_SECONDS: ${TRACCAR_POSITION_MIRROR_POLL_SECONDS:-10}
+      TRACCAR_POSITION_MIRROR_LOOKBACK_SECONDS: ${TRACCAR_POSITION_MIRROR_LOOKBACK_SECONDS:-60}
+      TRACCAR_POSITION_MIRROR_DRY_RUN: ${TRACCAR_POSITION_MIRROR_DRY_RUN:-true}
+      TRACCAR_POSITION_MIRROR_APPROVAL_REFERENCE: ${TRACCAR_POSITION_MIRROR_APPROVAL_REFERENCE:-}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    volumes:
+      - ../../tools/traccar_position_mirror.py:/app/traccar_position_mirror.py:ro
+      - position-mirror-state:/state
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  position-mirror-state:
