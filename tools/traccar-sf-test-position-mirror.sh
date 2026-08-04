@@ -19,7 +19,7 @@ base_file="$repo_dir/docker/compose/sf-test-server.yaml"
 event_override="$repo_dir/docker/compose/sf-test-server-forward.yaml"
 mirror_override="$repo_dir/docker/compose/sf-test-server-position-mirror.yaml"
 project="traccar-dev"
-expected_position_url="https://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/internal/gps/traccar/positions"
+expected_position_url="http://backend:8080/api/v1/internal/gps/traccar/positions"
 expected_fleet_health="https://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/health"
 expected_traccar_health="https://sf-test-server.tail056d0a.ts.net:18082/api/health"
 

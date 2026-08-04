@@ -1,5 +1,8 @@
 services:
   traccar:
+    networks:
+      default:
+      fleet-test:
     environment:
       PROTOCOLS_ENABLE: teltonika,smartcar,osmand
       FORWARD_TYPE: json
@@ -46,3 +49,8 @@ services:
 
 volumes:
   position-mirror-state:
+
+networks:
+  fleet-test:
+    external: true
+    name: smartfoodie-fleet_default

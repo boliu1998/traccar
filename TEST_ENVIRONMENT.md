@@ -96,7 +96,10 @@ Compose network. Port `5055` must never be published on the host or opened in
 the EC2 Security Group. The adapter has no Fleet-test credential and cannot
 send directly to Fleet-test. Only traccar-dev holds the position-forward
 credential and uses its built-in `FORWARD_TYPE=json`, `FORWARD_URL`, and
-`FORWARD_HEADER` settings.
+`FORWARD_HEADER` settings. For forwarding, traccar-dev also joins the existing
+external Docker network `smartfoodie-fleet_default` and calls Fleet-test at
+`http://backend:8080`; this does not publish another host port or relax the
+Tailscale-only Nginx policy.
 
 The production API credential must be read-only, limited to the approved
 devices, and allowed to read position reports. Source device `uniqueId` values

@@ -216,6 +216,8 @@ class PositionMirrorTest(unittest.TestCase):
         self.assertIn("FORWARD_TYPE: json", override)
         self.assertIn("FORWARD_URL:", override)
         self.assertIn("FORWARD_HEADER:", override)
+        self.assertIn("smartfoodie-fleet_default", override)
+        self.assertIn("fleet-test:", override)
         self.assertIn("traccar_position_mirror.py:/app/traccar_position_mirror.py:ro", override)
         self.assertNotIn('"5055:', override)
         self.assertNotIn("TRACCAR_POSITION_MIRROR_TARGET_SECRET", override)
@@ -240,6 +242,7 @@ class PositionMirrorTest(unittest.TestCase):
         self.assertIn("TRACCAR_POSITION_MIRROR_DRY_RUN=true", example)
         self.assertIn("<approved-read-only-token>", example)
         self.assertIn("<fleet-test-position-secret>", example)
+        self.assertIn("http://backend:8080/api/v1/internal/gps/traccar/positions", example)
 
     def test_validate_config_does_not_make_network_requests(self):
         with tempfile.TemporaryDirectory() as temp_dir:
