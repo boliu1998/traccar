@@ -21,6 +21,7 @@ mirror_override="$repo_dir/docker/compose/sf-test-server-position-mirror.yaml"
 project="traccar-dev"
 expected_position_url="https://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/internal/gps/traccar/positions"
 expected_fleet_health="https://sf-test-server.tail056d0a.ts.net/fleet-test/api/v1/health"
+expected_traccar_health="https://sf-test-server.tail056d0a.ts.net:18082/api/health"
 
 env_value() {
   local file="$1"
@@ -95,7 +96,7 @@ if test "$action" = "dry-run"; then
 fi
 
 test "$(env_value "$mirror_file" TRACCAR_POSITION_MIRROR_DRY_RUN)" = "false"
-curl --noproxy '*' -fsS http://100.64.127.75:18082/api/health >/dev/null
+curl --noproxy '*' -fsS "$expected_traccar_health" >/dev/null
 curl --noproxy '*' -fsS "$expected_fleet_health" >/dev/null
 mirror_compose up -d --no-build --pull never traccar position-mirror
 
